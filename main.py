@@ -17,22 +17,6 @@ import dotenv
 from lib.wallet_manager import WalletManager
 
 
-class ArbitrageInterface:
-    def __init__(self,
-                 network: str = 'aurora',
-                 w3: web3.Web3 = None):
-        self.w3 = w3
-        self.network = network
-        self.balances = {}
-        self.base_assets = []
-        self.quote_assets = []
-        self.routers = []
-        self._print = lib.style.PrettyText(0)
-
-    async def ensure_checksum(self, address):
-        return self.w3.toChecksumAddress(address)
-
-
 class SecureWeb3:
     def __init__(self, wallet_file=None, network='ethereum'):
         dotenv.load_dotenv()
@@ -45,6 +29,10 @@ class SecureWeb3:
         self.w3 = self.setup_w3()
 
     def setup_w3(self):
+        """
+        Configure the web3 rpc endpoint object. Place any chain specific variables here.
+        :return: web3.Web3()
+        """
         w3_endpoint = os.environ.get(f'{self.network}_http_endpoint')
         self.w3 = web3.Web3(web3.HTTPProvider(w3_endpoint))
         if self.w3.isConnected:
@@ -64,13 +52,16 @@ class SecureWeb3:
             self.endpoint = 'https://bsc.api.0x.org/'
             self._print.warning('Connected to BSC, which has not been tested very well yet.')
         elif self.network == 'aurora':
-            self._endpoint = None
             self.token_abi = lib.abi_lib.EIP20_ABI
 
         self._print.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3
 
     def load_wallet(self):
+        """
+        Load the wallet manager and decrypt the wallet.
+        :return:
+        """
         if not self.wallet_file:
             self.wallet_file = os.environ.get('default_wallet_location')
         w = WalletManager(self.wallet_file)
@@ -84,6 +75,10 @@ class SecureWeb3:
         return False
 
     def configure_wallet(self):
+        """
+        Launch the setup wizards and store the encrypted wallet.
+        :return:
+        """
         w = WalletManager(self.wallet_file)
         w.setup_wizard()
         w = uuid.uuid4().hex
@@ -91,9 +86,19 @@ class SecureWeb3:
 
     @property
     def web3(self):
+        """
+        Place logic for using different endpoints in different scenarios here.
+        :return:
+        """
         return self.w3
 
     def switch_network(self, network_name, poa=False):
+        """
+        Switch the chain.
+        :param network_name:
+        :param poa:
+        :return:
+        """
         endpoint = os.environ.get(f'infura_{network_name}_endpoint')
         if not endpoint:
             self._print.error('Could not find network, is it configured?')
