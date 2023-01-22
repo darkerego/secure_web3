@@ -138,3 +138,4 @@ if __name__ == '__main__':
     priv_key = manager.decrypt_load_wallet()
     # Do something with private key ...
     # print(priv_key)
+    print('[+] Successfully unlocked wallet!')
