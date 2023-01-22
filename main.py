@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-import json
+import argparse
 import os
-import asyncio
 import uuid
 
-from web3.exceptions import ContractLogicError
+import dotenv
+import web3
 from web3.middleware import geth_poa_middleware
 
-import random
 import lib.style
 from lib import abi_lib
-import web3
-import argparse
-import dotenv
-
 from lib.wallet_manager import WalletManager
 
 
@@ -141,4 +136,5 @@ if __name__ == '__main__':
     print(f'[*] Opening wallet "{wallet_file}" ... ')
     manager = WalletManager(wallet_file)
     priv_key = manager.decrypt_load_wallet()
-    print(priv_key)
+    # Do something with private key ...
+    # print(priv_key)
