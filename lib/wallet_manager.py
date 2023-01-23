@@ -8,14 +8,20 @@ import json
 import base64
 import hashlib
 import uuid
+
+import dotenv
 import web3
 from Crypto import Random
 from Crypto.Cipher import AES
 
 
 class JsonWallet:
-    def __init__(self, wallet_file):
-        self.wallet_file = wallet_file
+    def __init__(self, wallet_file, wallet_file_env=None):
+        dotenv.load_dotenv()
+        if wallet_file_env:
+            self.wallet_file = os.environ.get(wallet_file)
+        else:
+            self.wallet_file = wallet_file
         self.jw = {'enc_password': None,
                    'salt': None,
                    'enc_wallet': None,
@@ -111,16 +117,24 @@ class WalletManager:
 
     def setup_wizard(self):
         password = ''
+        confirm_password = ''
         # Example usage:
         for x in range(3):
             password: str = getpass('Enter password  >> ')
-            confirm_password = getpass('Confirm password >>: ')
+            confirm_password = str(getpass('Confirm password >>: '))
+            if password == confirm_password:
+                break
+            else:
+                print('Passwords do not match')
+        if not password:
+            return False
+
+        for x in range(3):
             s, p = self.hasher.hash_str(password=password)
             assert self.hasher.check_hash_str(s, p, password)
             assert not self.hasher.check_hash_str(s, p, str(uuid.uuid4().hex))
             private_key = getpass('Enter privkey >> ')
             confirm_key = getpass('Confirm key >> ')
-            comment = input('Optional Comment: >> ')
             if private_key == confirm_key:
                 self.aes = AESCipher(password)
                 enc_key = self.aes.encrypt(private_key)
@@ -130,20 +144,22 @@ class WalletManager:
                     print('[!] Error decrypting, try again.')
                 else:
                     print('[+] The wizard successfully configured your wallet.')
+                    comment = str(input('Memo >>'))
+                    if not comment:
+                        comment = ''
+                    if password == confirm_password:
+                        print('Success ... encrypting')
 
-                if password == confirm_password:
-                    print('Success ... encrypting')
+                        self.wallet.setup(encrypted_password=p, salt=s, encrypted_key=enc_key,
+                                          public_key=self.privkey_to_address(private_key),
+                                          comment=comment)
 
-                    self.wallet.setup(encrypted_password=p, salt=s, encrypted_key=enc_key,
-                                      public_key=self.privkey_to_address(private_key),
-                                      comment=comment)
+                        del password, confirm_password, private_key, confirm_key, comment
+                        self.wallet.save_wallet()
 
-                    del password, confirm_password, private_key, confirm_key, comment
-                    self.wallet.save_wallet()
-
-                    break
-                else:
-                    print('Keys did not match ...')
+                        break
+                    else:
+                        print('Keys did not match ...')
 
     def _decrypt_load_wallet(self):
         """
@@ -176,7 +192,7 @@ class WalletManager:
                     break
                 else:
                     print('[!] Incorrect password')
-            if x+1 == 3:
+            if x + 1 == 3:
                 print('Max tries exceeded.')
         return ret
 
