@@ -26,6 +26,7 @@ class JsonWallet:
                    'salt': None,
                    'enc_wallet': None,
                    'public_address': None,
+                   'tokens': [],
                    'comment': None}
 
     def setup(self, encrypted_password: bytes = None,
@@ -38,18 +39,44 @@ class JsonWallet:
         self.jw.update({'salt': base64.b64encode(salt).decode()})
         self.jw.update({'enc_wallet': base64.b64encode(encrypted_key).decode()})
         self.jw.update({'public_address': public_key})
+        self.jw.update({'native_balances': {}})
+        self.jw.update({'tokens': []})
         self.jw.update({'comment': comment})
 
     def save_wallet(self):
         with open(self.wallet_file, 'w') as f:
             json.dump(obj=self.jw, fp=f)
 
+    def update_wallet(self, field, value):
+        #
+        if self.jw.get(field):
+            setattr(self.jw, field, value)
+        else:
+            self.jw.update({field: value})
+        self.save_wallet()
+
     def load_wallet(self):
         with open(self.wallet_file, 'r') as f:
             self.jw = json.load(fp=f)
-            return base64.b64decode(self.jw.get('enc_password')), base64.b64decode(
-                self.jw.get('salt')), base64.b64decode(self.jw.get('enc_wallet')), \
-                   self.jw.get('public_address')
+            # print(self.jw)
+            # Fix older wallets missing fields
+            if type(self.jw.get('tokens')) is None:
+                self.jw.update({'tokens': []})
+                self.save_wallet()
+            if type(self.jw.get('comment')) is None:
+                self.jw.update({'comment': ''})
+                self.save_wallet()
+            if type(self.jw.get('native_balances')) is None:
+                self.jw.update({'native_balances': []})
+                self.save_wallet()
+
+            return base64.b64decode(self.jw.get('enc_password')), \
+                   base64.b64decode(self.jw.get('salt')), \
+                   base64.b64decode(self.jw.get('enc_wallet')), \
+                   self.jw.get('public_address'), \
+                   self.jw.get('native_balances'), \
+                   self.jw.get('tokens'), \
+                   self.jw.get('comment')
 
 
 class AESCipher(object):
@@ -167,11 +194,12 @@ class WalletManager:
         :return:
         """
         pw = getpass('Unlock wallet >>')
-        salt, password, enc_key, address = self.wallet.load_wallet()
+        salt, password, enc_key, address, native_balances, tokens, comment = self.wallet.load_wallet()
 
+        ret_dict = {"tokens": tokens, "comment": comment, "balances": native_balances}
         if self.hasher.check_hash_str(password, salt, pw):
             self.aes = AESCipher(pw)
-            return self.aes.decrypt(enc=enc_key)
+            return self.aes.decrypt(enc=enc_key), ret_dict
         else:
             return False
 
@@ -180,10 +208,11 @@ class WalletManager:
         User friendly method
         :return:
         """
-        ret = False
+        ret = {}
+        denc = False
         for x in range(3):
             try:
-                ret = self._decrypt_load_wallet()
+                denc, ret = self._decrypt_load_wallet()
             except KeyboardInterrupt:
                 print('[-] Caught Signal, exit gracefully .. ')
             else:
@@ -194,7 +223,7 @@ class WalletManager:
                     print('[!] Incorrect password')
             if x + 1 == 3:
                 print('Max tries exceeded.')
-        return ret
+        return denc, ret
 
 
 if __name__ == '__main__':
