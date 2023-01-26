@@ -8,6 +8,11 @@ and saves it into a json file for secure storage. I wrote it because I have a lo
 storing private keys in plaintext on disc. At the time I wrote it I was not aware of other options like brownie. 
 </p>
 
+<p>
+This is also a command line wallet which is compatable with any EVM chain. Currently it supports sending both 
+eth and erc20 tokens. I will be adding more features in time.
+</p>
+
 <pre>
 usage: Secure Web3 Cli [-h] [-i INIT_WALLET] [-o [OPEN_WALLET]] [-l] [-n {ethereum,polygon,bsc,aurora}]
 
