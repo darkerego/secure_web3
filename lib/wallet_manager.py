@@ -57,7 +57,7 @@ class JsonWallet:
     def load_wallet(self):
         with open(self.wallet_file, 'r') as f:
             self.jw = json.load(fp=f)
-            #print(self.jw)
+            # print(self.jw)
             # Fix older wallets missing fields
             if type(self.jw.get('tokens')) is None:
                 self.jw.update({'tokens': []})
@@ -68,7 +68,6 @@ class JsonWallet:
             if type(self.jw.get('native_balances')) is None:
                 self.jw.update({'native_balances': []})
                 self.save_wallet()
-
 
             return base64.b64decode(self.jw.get('enc_password')), \
                    base64.b64decode(self.jw.get('salt')), \
