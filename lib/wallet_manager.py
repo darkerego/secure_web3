@@ -48,6 +48,7 @@ class JsonWallet:
             json.dump(obj=self.jw, fp=f)
 
     def update_wallet(self, field, value):
+        # 
         if self.jw.get(field):
             setattr(self.jw, field, value)
         else:
