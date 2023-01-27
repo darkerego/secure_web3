@@ -3,10 +3,13 @@
 ### About
 
 <p>
-This is a simple, secure command-line wallet for EVM compatible wallets. Additionally it is a secure framework for developers to manage their private keys with. It contains a setup wizard that encrypts your wallet and saves it into a json file for secure storage. I wrote it because I have a lot of web3 projects and I do not like storing private keys in plaintext on disc.
-
+This is a simple, secure command-line wallet for EVM compatible wallets. Additionally, it is a secure framework for developers to manage their private keys with. It contains a setup wizard that encrypts your wallet and saves it into a json file for secure storage. 
+I wrote it because I have a lot of web3 projects and I do not like storing private keys in plaintext on disc.
 <p>
-This is also a command line wallet which is compatable with any EVM chain. Currently it supports sending both 
+<b> Use as a wallet</b>
+</p>
+<p>
+Sw3 is a command line wallet which is compatable with any EVM chain. Currently it supports sending both 
 eth and erc20 tokens. I will be adding more features in time.
 </p>
 
@@ -44,3 +47,21 @@ options:
 
 
 </pre>
+
+<p>
+<b>
+As a development framework
+</b>
+</p>
+
+<p>
+See main.py for example use.
+</p>
+<pre>
+
+>> from lib import wallet_manager
+>> manager = wallet_manager.WalletManager(wallet_file)
+>> priv_key = manager.decrypt_load_wallet()
+
+</pre>
+

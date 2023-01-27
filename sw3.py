@@ -21,7 +21,7 @@ from lib.wallet_manager import WalletManager
 
 
 class SecureWeb3:
-    def __init__(self, wallet_file=None, network='ethereum'):
+    def __init__(self, wallet_file: str =None, network: str = 'ethereum'):
         dotenv.load_dotenv()
         self.endpoint = None
         self.token_abi = None
@@ -35,7 +35,7 @@ class SecureWeb3:
         self.eth_price = 0
         self._session = requests.Session()
 
-    def setup_w3(self):
+    def setup_w3(self) -> web3.Web3:
         w3_endpoint = os.environ.get(f'{self.network}_http_endpoint')
         self.w3 = web3.Web3(web3.HTTPProvider(w3_endpoint))
         if self.w3.isConnected:
@@ -58,7 +58,7 @@ class SecureWeb3:
         self.printer.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3
 
-    def load_wallet(self):
+    def load_wallet(self) -> bool:
         if not self.wallet_file:
             self.wallet_file = os.environ.get('default_wallet_location')
         self.wallet = WalletManager(self.wallet_file)
@@ -80,17 +80,17 @@ class SecureWeb3:
             return True
         return False
 
-    def configure_wallet(self):
+    def configure_wallet(self) -> None:
         w = WalletManager(self.wallet_file)
         w.setup_wizard()
         w = uuid.uuid4().hex
         del w
 
     @property
-    def web3(self):
+    def web3(self) -> web3.Web3:
         return self.w3
 
-    def query_eth_price(self):
+    def query_eth_price(self) -> None:
         if self.w3.eth.chain_id == 0 or self.w3.eth.chain_id == 5:
             s, r = self._session.get(
                 url=f'https://api.etherscan.io/api?module=stats&action=ethprice&apikey='
@@ -111,7 +111,7 @@ class SecureWeb3:
             eth_price = json.loads(json.dumps(r))
             self.eth_price = eth_price.get('result').get('maticusd')
 
-    def query_gas_api(self):
+    def query_gas_api(self) -> (int, int):
         """curl -H 'Authorization: f5534c3e-c1e0-477d-9978-412b9a1276a6'
         'https://api.blocknative.com/gasprices/blockprices?chainid=137'"""
         if self.w3.eth.chain_id == 5:
@@ -128,7 +128,7 @@ class SecureWeb3:
         max_fee_per_gas = ret.get('blockPrices')[0].get('estimatedPrices')[0].get('maxFeePerGas')
         return max_priority_fee_per_gas, max_fee_per_gas
 
-    def switch_network(self, network_name, poa=False):
+    def switch_network(self, network_name: str, poa: bool =False) -> None:
         endpoint = os.environ.get(f'infura_{network_name}_endpoint')
         if not endpoint:
             self.printer.error('Could not find network, is it configured?')
@@ -203,7 +203,7 @@ class EtherShellWallet:
                 return receipt
         self.sw3.printer.error('Timed out, transaction may be underpriced!')
 
-    def send_erc20_token(self, amount, destination, token_address, legacy=False):
+    def send_erc20_token(self, raw_amount: int, destination: str, token_address: str, legacy: bool = False) -> HexStr:
         token = self.sw3.w3.eth.contract(self.sw3.w3.toChecksumAddress(token_address), abi=lib.abi_lib.EIP20_ABI)
         mpfpg, mfpg = self.sw3.query_gas_api()
         if self.sw3.w3.eth.chain_id in [0, 1, 5, 137]:
@@ -212,7 +212,7 @@ class EtherShellWallet:
                 'maxFeePerGas': self.sw3.w3.toWei(mfpg, 'gwei'),
                 "to": self.sw3.w3.toChecksumAddress(destination),
                 "value": "0x0",
-                "data": token.encodeABI('transfer', args=(self.sw3.w3.toChecksumAddress(destination), amount)),
+                "data": token.encodeABI('transfer', args=(self.sw3.w3.toChecksumAddress(destination), raw_amount)),
                 "nonce": self.sw3.w3.eth.get_transaction_count(self.sw3.account.address),
                 "chainId": self.sw3.w3.eth.chain_id
             }
@@ -221,19 +221,18 @@ class EtherShellWallet:
                 tx.pop('maxPriorityFeePerGas')
                 tx.pop('type')
                 tx.update({'gasPrice': self.sw3.w3.toWei(int(self.sw3.w3.eth.gas_price * 1.1), 'gwei')})
-            else:
-                gas = self.sw3.w3.eth.estimate_gas(tx)
-                tx.update({'gas': gas})
+
+            gas = self.sw3.w3.eth.estimate_gas(tx)
+            tx.update({'gas': gas})
             return self.broadcast_raw_tx(tx)
 
-    def send_eth(self, amount, destination, gas_limit=21000, legacy=False):
+    def send_eth(self, raw_amount: int, destination: str, legacy: bool = False) -> HexStr:
         mpfpg, mfpg = self.sw3.query_gas_api()
 
         tx = {
             'nonce': self.sw3.w3.eth.get_transaction_count(self.sw3.account.address),
             'to': self.sw3.w3.toChecksumAddress(destination),
-            'value': self.sw3.w3.toWei(amount, 'ether'),
-            'gas': gas_limit,  # 21000
+            'value': raw_amount,
             'maxFeePerGas': self.sw3.w3.toWei(mfpg, 'gwei'),
             'maxPriorityFeePerGas': self.sw3.w3.toWei(mpfpg, 'gwei'),
             'type': 2,
@@ -244,9 +243,11 @@ class EtherShellWallet:
             tx.pop('maxPriorityFeePerGas')
             tx.pop('type')
             tx.update({'gasPrice': self.sw3.w3.toWei(int(self.sw3.w3.eth.gas_price * 1.1), 'gwei')})
+        gas = self.sw3.w3.eth.estimate_gas(tx)
+        tx.update({'gas': gas})
         return self.broadcast_raw_tx(tx)
 
-    def import_token(self, token_address):
+    def import_token(self, token_address: str) -> bool:
         if not validate_addr(token_address):
             return False
         if not valid_token(self._token(token_address)):
@@ -264,7 +265,7 @@ class EtherShellWallet:
         self.sw3.wallet.wallet.update_wallet('tokens', self.sw3.tokens)
         return True
 
-    def interactive(self, action='send', _type='eth', legacy=False):
+    def interactive(self, action: str ='send', _type: str ='eth', legacy: bool = False):
         if action == 'send':
             balance = self.eth_balance()
             self.sw3.printer.normal(f'Launching interactive wallet shell.\n')
@@ -272,9 +273,6 @@ class EtherShellWallet:
             destination = lib.inputs.get_dest_addr()
             if self.sw3.w3.eth.getCode(destination):
                 self.sw3.printer.warning('Warning! This is a contract address!')
-                gas = 44000  # TODO: calculate the required gas via estimate_gas
-            else:
-                gas = 21000
             if type == 'eth':
                 while True:
                     amount = input("Amount in ether >> ")
@@ -286,7 +284,8 @@ class EtherShellWallet:
                             self.sw3.printer.error(f'Amount exceeds current wallet balance: {balance}')
                 self.sw3.printer.normal(f'Transaction parameters: \nSend {amount} to {destination}')
                 if lib.inputs.confirmation():
-                    txid = self.send_eth(amount, destination, gas, legacy)
+                    amount = self.sw3.w3.toWei(amount, 'ether'),
+                    txid = self.send_eth(int(amount), destination, legacy)
                     self.sw3.printer.good(f'TXID: {txid}')
                     receipt = self.poll_receipt(txid)
                     if receipt:
