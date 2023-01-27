@@ -9,7 +9,7 @@ import uuid
 import dotenv
 import requests
 import web3
-from eth.exceptions import TransactionNotFound
+from web3.exceptions import TransactionNotFound
 from web3.middleware import geth_poa_middleware
 
 import lib.style
