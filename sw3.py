@@ -9,6 +9,8 @@ import uuid
 import dotenv
 import requests
 import web3
+from eth_typing import HexStr
+from web3.contract import Contract
 from web3.exceptions import TransactionNotFound
 from web3.middleware import geth_poa_middleware
 
@@ -147,35 +149,34 @@ class EtherShellWallet:
         self.sw3 = sw3
         self._balance = 0
 
-    def broadcast_raw_tx(self, tx):
+    def broadcast_raw_tx(self, tx: dict) -> HexStr:
         tx['nonce'] = self.sw3.w3.eth.get_transaction_count(sw3.account.address)
         self.sw3.printer.normal(f'Loaded TX:\n{tx}')
         sign = input('Broadcast? y/n >> ')
         if sign.lower() in ['yes', 'y']:
             signed_tx = self.sw3.account.sign_transaction(tx)
-            txid = web3.Web3.toHex(sw3.w3.eth.send_raw_transaction(signed_tx.rawTransaction))
-            return txid
+            return web3.Web3.toHex(sw3.w3.eth.send_raw_transaction(signed_tx.rawTransaction))
 
-    def _token(self, token_address):
+    def _token(self, token_address: str) -> Contract:
         if self.sw3.w3.eth.chain_id == 56:
             token = self.sw3.w3.eth.contract(self.sw3.w3.toChecksumAddress(token_address), abi=lib.abi_lib.BEP_ABI)
         else:
             token = self.sw3.w3.eth.contract(self.sw3.w3.toChecksumAddress(token_address), abi=lib.abi_lib.EIP20_ABI)
         return token
 
-    def eth_balance(self, raw=False):
+    def eth_balance(self, raw: bool = False) -> (int, float):
         self._balance = sw3.w3.eth.getBalance(sw3.account.address)
         if raw:
             return self._balance
         return self._balance / (10 ** 18)
 
-    def token_convert(self, token_address, qty):
+    def token_convert(self, token_address: str, qty: int) -> float:
         for token in self.sw3.tokens:
             if self.sw3.w3.toChecksumAddress(token_address) == self.sw3.w3.toChecksumAddress(token.get("address")):
                 dec = token.get('decimals')
                 return int(qty / (10 ** dec))
 
-    def token_balance(self, token_address, raw=False):
+    def token_balance(self, token_address: str, raw: bool =False) -> (int, float):
         token = self._token(token_address)
         token_balance = token.functions.balanceOf(self.sw3.account.address).call()
         if raw:
@@ -185,7 +186,7 @@ class EtherShellWallet:
                 dec = int(tok.get('decimals'))
                 return token_balance / (10 ** dec)
 
-    def poll_receipt(self, tx_hash):
+    def poll_receipt(self, tx_hash: hex):
         poll = 0
         while True:
             if poll > 100:
@@ -207,7 +208,6 @@ class EtherShellWallet:
         mpfpg, mfpg = self.sw3.query_gas_api()
         if self.sw3.w3.eth.chain_id in [0, 1, 5, 137]:
             tx = {
-                "gas": 300000,  # 200000
                 'maxPriorityFeePerGas': self.sw3.w3.toWei(mpfpg, 'gwei'),
                 'maxFeePerGas': self.sw3.w3.toWei(mfpg, 'gwei'),
                 "to": self.sw3.w3.toChecksumAddress(destination),
@@ -221,6 +221,9 @@ class EtherShellWallet:
                 tx.pop('maxPriorityFeePerGas')
                 tx.pop('type')
                 tx.update({'gasPrice': self.sw3.w3.toWei(int(self.sw3.w3.eth.gas_price * 1.1), 'gwei')})
+            else:
+                gas = self.sw3.w3.eth.estimate_gas(tx)
+                tx.update({'gas': gas})
             return self.broadcast_raw_tx(tx)
 
     def send_eth(self, amount, destination, gas_limit=21000, legacy=False):
@@ -313,7 +316,7 @@ class EtherShellWallet:
                             break
                         else:
                             self.sw3.printer.error(f'Amount exceeds current wallet balance: {token_balance}')
-                qty = self.token_convert(token.get('address'), amount)
+                qty = int(amount * (10**int(token.get('decimals'))))
                 if balance <= 0:
                     self.sw3.printer.error('Not enough ETH to pay for gas!')
                     return False
