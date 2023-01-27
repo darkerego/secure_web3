@@ -194,7 +194,7 @@ class EtherShellWallet:
             self.sw3.printer.normal(f'Polling for receipt: {poll}/100 ... ')
             try:
                 receipt = self.sw3.w3.eth.get_transaction_receipt(tx_hash)
-            except TransactionNotFound:
+            except web3.exceptions.TransactionNotFound:
                 # await asyncio.sleep(1)
                 time.sleep(1)
             else:
@@ -295,7 +295,7 @@ class EtherShellWallet:
                         addr = token.get('address')
                         token_balance = self.token_convert(addr, token.get('balance'))
                         addr = addr[:4] + '..' + addr[-4:]
-                        print(f'[{x}], {token.get("symbol")}@{addr}, Balance: {token_balance}')
+                        print(f'[{x}], {token.get("symbol")}@{addr}, Balance: {token_balance} (local)')
                     selection = input('Selection # >> ')
                     if int(selection) <= int(len(self.sw3.tokens) - 1):
                         token = self.sw3.tokens[int(selection)]
@@ -303,6 +303,7 @@ class EtherShellWallet:
                         token_address = token.get('address')
                         token_short_addr = token_address[:4] + '..' + token_address[-4:]
                         token_balance = self.token_balance(token_address)
+                        self.sw3.printer.normal(f'Balance: {token_balance} (live)')
                         break
                 while True:
                     amount = input(f"Amount in {symbol} >> ")
@@ -321,7 +322,8 @@ class EtherShellWallet:
                 if lib.inputs.confirmation():
                     txid = self.send_erc20_token(qty, destination, token.get('address'), legacy)
                     if txid:
-                        self.poll_receipt(txid)
+                        receipt = self.poll_receipt(txid)
+                        pprint.pprint(receipt)
 
 
 if __name__ == '__main__':
@@ -343,7 +345,7 @@ if __name__ == '__main__':
     tx_options = args.add_argument_group(description='EVM State-Writing related options.')
     tx_options.add_argument('-r', '--raw', dest='broadcast_raw', type=str, help='Load a json tx from '
                                                                                 'this file to sign and broadcast.')
-    tx_options.add_argument('-s', '--send', choices=['eth', 'erc20'], default='eth',
+    tx_options.add_argument('-s', '--send', choices=['eth', 'erc20'], default=None,
                             help='Open interactive shell to send ethereum.')
 
     tx_options.add_argument('-L', '--legacy', action='store_true', default=False, help='Use legacy gas protocol.')
@@ -372,6 +374,8 @@ if __name__ == '__main__':
     if args.broadcast_raw:
         with open(args.broadcast_raw, 'r') as f:
             tx = json.load(fp=f)
-        wallet.broadcast_raw_tx(tx)
+        txid = wallet.broadcast_raw_tx(tx)
+        sw3.printer.normal(f'TXID: {txid}')
+        wallet.poll_receipt(txid)
     if args.send:
         wallet.interactive(action='send', _type=args.send, legacy=args.legacy)
