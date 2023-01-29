@@ -13,6 +13,7 @@ from eth_typing import HexStr
 from web3.contract import Contract
 from web3.exceptions import TransactionNotFound
 from web3.middleware import geth_poa_middleware
+from web3.types import RPCResponse
 
 import lib.style
 from lib import abi_lib, inputs
@@ -21,12 +22,13 @@ from lib.wallet_manager import WalletManager
 
 
 class SecureWeb3:
-    def __init__(self, wallet_file: str =None, network: str = 'ethereum'):
+    def __init__(self, wallet_file: str = None, network: str = 'ethereum'):
         dotenv.load_dotenv()
         self.endpoint = None
         self.token_abi = None
         self.account = None
         self.wallet = None
+        self.flashbots_endpoint = None
         self.tokens = []
         self.printer = lib.style.PrettyText(0)
         self.wallet_file = wallet_file
@@ -36,7 +38,11 @@ class SecureWeb3:
         self._session = requests.Session()
 
     def setup_w3(self) -> web3.Web3:
+        self.flashbots_endpoint = os.environ.get(f'flashbots_{self.network}_endpoint')
         w3_endpoint = os.environ.get(f'{self.network}_http_endpoint')
+        if self.flashbots_endpoint:
+            self.printer.normal('Flashbots RPC available')
+            w3_endpoint = self.flashbots_endpoint
         self.w3 = web3.Web3(web3.HTTPProvider(w3_endpoint))
         if self.w3.isConnected:
             self.printer.good(f"Connected to chain: {self.w3.eth.chain_id}")
@@ -128,7 +134,12 @@ class SecureWeb3:
         max_fee_per_gas = ret.get('blockPrices')[0].get('estimatedPrices')[0].get('maxFeePerGas')
         return max_priority_fee_per_gas, max_fee_per_gas
 
-    def switch_network(self, network_name: str, poa: bool =False) -> None:
+    def switch_network(self, network_name: str, poa: bool = False) -> None:
+        """
+        Switch network of w3 connections
+        :param network_name:
+        :param poa: load point of authority middleware for networks like polygon
+        """
         endpoint = os.environ.get(f'infura_{network_name}_endpoint')
         if not endpoint:
             self.printer.error('Could not find network, is it configured?')
@@ -149,15 +160,48 @@ class EtherShellWallet:
         self.sw3 = sw3
         self._balance = 0
 
-    def broadcast_raw_tx(self, tx: dict) -> HexStr:
+    def build_private_tx(self, tx: dict):
+        block = self.sw3.w3.eth.get_block_number() + 1
+        _tx = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_sendPrivateTransaction",
+            "params": [{"tx": tx, "maxBlockNumber": block}]}
+        return _tx
+
+    def broadcast_raw_tx(self, tx: dict, private: bool = False) -> (HexStr, RPCResponse):
+        """
+        Send a raw transaction to the rpc for broadcast
+        :param tx: Signed Transaction
+        :param private: send via private transaction method
+        :return: transaction hash
+        """
         tx['nonce'] = self.sw3.w3.eth.get_transaction_count(sw3.account.address)
         self.sw3.printer.normal(f'Loaded TX:\n{tx}')
         sign = input('Broadcast? y/n >> ')
         if sign.lower() in ['yes', 'y']:
             signed_tx = self.sw3.account.sign_transaction(tx)
-            return web3.Web3.toHex(sw3.w3.eth.send_raw_transaction(signed_tx.rawTransaction))
+            if private:
+
+                payload = self.build_private_tx(tx)
+
+                headers = {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                }
+
+                response = requests.post(self.sw3.flashbots_endpoint, json=payload, headers=headers)
+                resp = response.json()
+                print(response.status_code, resp)
+                return resp.get('result').get('bundleHash')
+            return web3.Web3.toHex(self.sw3.w3.eth.send_raw_transaction(signed_tx.rawTransaction))
 
     def _token(self, token_address: str) -> Contract:
+        """
+        Create and return a Contract object with the ERC/BEP/20 abi
+        :param token_address: contract address string
+        :return: Contract object
+        """
         if self.sw3.w3.eth.chain_id == 56:
             token = self.sw3.w3.eth.contract(self.sw3.w3.toChecksumAddress(token_address), abi=lib.abi_lib.BEP_ABI)
         else:
@@ -165,6 +209,11 @@ class EtherShellWallet:
         return token
 
     def eth_balance(self, raw: bool = False) -> (int, float):
+        """
+
+        :param raw: if true return raw integer
+        :return:
+        """
         self._balance = sw3.w3.eth.getBalance(sw3.account.address)
         if raw:
             return self._balance
@@ -176,7 +225,7 @@ class EtherShellWallet:
                 dec = token.get('decimals')
                 return int(qty / (10 ** dec))
 
-    def token_balance(self, token_address: str, raw: bool =False) -> (int, float):
+    def token_balance(self, token_address: str, raw: bool = False) -> (int, float):
         token = self._token(token_address)
         token_balance = token.functions.balanceOf(self.sw3.account.address).call()
         if raw:
@@ -203,7 +252,8 @@ class EtherShellWallet:
                 return receipt
         self.sw3.printer.error('Timed out, transaction may be underpriced!')
 
-    def send_erc20_token(self, raw_amount: int, destination: str, token_address: str, legacy: bool = False) -> HexStr:
+    def send_erc20_token(self, raw_amount: int, destination: str, token_address: str, legacy: bool = False,
+                         private: bool = False) -> HexStr:
         token = self.sw3.w3.eth.contract(self.sw3.w3.toChecksumAddress(token_address), abi=lib.abi_lib.EIP20_ABI)
         mpfpg, mfpg = self.sw3.query_gas_api()
         if self.sw3.w3.eth.chain_id in [0, 1, 5, 137]:
@@ -224,9 +274,9 @@ class EtherShellWallet:
 
             gas = self.sw3.w3.eth.estimate_gas(tx)
             tx.update({'gas': gas})
-            return self.broadcast_raw_tx(tx)
+            return self.broadcast_raw_tx(tx, private)
 
-    def send_eth(self, raw_amount: int, destination: str, legacy: bool = False) -> HexStr:
+    def send_eth(self, raw_amount: int, destination: str, legacy: bool = False, private: bool = False) -> HexStr:
         mpfpg, mfpg = self.sw3.query_gas_api()
 
         tx = {
@@ -245,7 +295,7 @@ class EtherShellWallet:
             tx.update({'gasPrice': self.sw3.w3.toWei(int(self.sw3.w3.eth.gas_price * 1.1), 'gwei')})
         gas = self.sw3.w3.eth.estimate_gas(tx)
         tx.update({'gas': gas})
-        return self.broadcast_raw_tx(tx)
+        return self.broadcast_raw_tx(tx, private)
 
     def import_token(self, token_address: str) -> bool:
         if not validate_addr(token_address):
@@ -265,7 +315,8 @@ class EtherShellWallet:
         self.sw3.wallet.wallet.update_wallet('tokens', self.sw3.tokens)
         return True
 
-    def interactive(self, action: str ='send', _type: str ='eth', legacy: bool = False):
+    def interactive(self, action: str = 'send', _type: str = 'eth', legacy: bool = False, private: bool = False):
+        # print(action, _type, legacy)
         if action == 'send':
             balance = self.eth_balance()
             self.sw3.printer.normal(f'Launching interactive wallet shell.\n')
@@ -273,7 +324,7 @@ class EtherShellWallet:
             destination = lib.inputs.get_dest_addr()
             if self.sw3.w3.eth.getCode(destination):
                 self.sw3.printer.warning('Warning! This is a contract address!')
-            if type == 'eth':
+            if _type == 'eth':
                 while True:
                     amount = input("Amount in ether >> ")
                     amount = float(amount)
@@ -284,8 +335,8 @@ class EtherShellWallet:
                             self.sw3.printer.error(f'Amount exceeds current wallet balance: {balance}')
                 self.sw3.printer.normal(f'Transaction parameters: \nSend {amount} to {destination}')
                 if lib.inputs.confirmation():
-                    amount = self.sw3.w3.toWei(amount, 'ether'),
-                    txid = self.send_eth(int(amount), destination, legacy)
+                    amount = amount * (10 ** 18)
+                    txid = self.send_eth(int(amount), destination, legacy, private)
                     self.sw3.printer.good(f'TXID: {txid}')
                     receipt = self.poll_receipt(txid)
                     if receipt:
@@ -315,14 +366,14 @@ class EtherShellWallet:
                             break
                         else:
                             self.sw3.printer.error(f'Amount exceeds current wallet balance: {token_balance}')
-                qty = int(amount * (10**int(token.get('decimals'))))
+                qty = int(amount * (10 ** int(token.get('decimals'))))
                 if balance <= 0:
                     self.sw3.printer.error('Not enough ETH to pay for gas!')
                     return False
                 self.sw3.printer.normal(f'Transaction parameters: \nSend {amount} of {symbol} @{token_short_addr} '
                                         f'to {destination}')
                 if lib.inputs.confirmation():
-                    txid = self.send_erc20_token(qty, destination, token.get('address'), legacy)
+                    txid = self.send_erc20_token(qty, destination, token.get('address'), legacy, private)
                     if txid:
                         receipt = self.poll_receipt(txid)
                         pprint.pprint(receipt)
@@ -349,6 +400,8 @@ if __name__ == '__main__':
                                                                                 'this file to sign and broadcast.')
     tx_options.add_argument('-s', '--send', choices=['eth', 'erc20'], default=None,
                             help='Open interactive shell to send ethereum.')
+    tx_options.add_argument('-p', '--private', dest='use_private_tx', action='store_true',
+                            help='Submit transaction private via flashbots (if available).')
 
     tx_options.add_argument('-L', '--legacy', action='store_true', default=False, help='Use legacy gas protocol.')
 
@@ -376,8 +429,8 @@ if __name__ == '__main__':
     if args.broadcast_raw:
         with open(args.broadcast_raw, 'r') as f:
             tx = json.load(fp=f)
-        txid = wallet.broadcast_raw_tx(tx)
+        txid = wallet.broadcast_raw_tx(tx, private=args.private)
         sw3.printer.normal(f'TXID: {txid}')
         wallet.poll_receipt(txid)
     if args.send:
-        wallet.interactive(action='send', _type=args.send, legacy=args.legacy)
+        wallet.interactive(action='send', _type=args.send, legacy=args.legacy, private=args.use_private_tx)
