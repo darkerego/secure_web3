@@ -65,3 +65,6 @@ See main.py for example use.
 
 </pre>
 
+### Changelog
+
+- January 28th, 2023 -- Added support for flashbots RPC and private transactions.
