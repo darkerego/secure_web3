@@ -1,0 +1,36 @@
+{
+  "networks": [
+    {
+      "name": "ethereum",
+      "chain_id": 1,
+      "native": "ETH",
+      "poa": false,
+      "explorer": "https://etherscan.io",
+      "type": "mainnet"
+    },
+    {
+      "name": "arbitrum",
+      "chain_id": 42161,
+      "native": "ETH",
+      "poa": false,
+      "explorer": "https://arbiscan.io",
+      "type": "mainnet"
+    },
+    {
+      "name": "polygon",
+      "chain_id": 137,
+      "native": "MATIC",
+      "poa": true,
+      "explorer": "https://polygonscan.com",
+      "type": "mainnet"
+    },
+    {
+      "name": "goerli",
+      "chain_id": 5,
+      "native": "GoerliETH",
+      "poa": false,
+      "explorer": "https://goerli.etherscan.io",
+      "type": "testnet"
+    }
+  ]
+}

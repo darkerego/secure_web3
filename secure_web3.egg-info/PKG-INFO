@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: secure-web3
+Version: 1.1
+Summary: Secure Web3 Wallet and DevEnv
+Home-page: https://github.com/darkerego/secure_web3
+Author: darkerego
+Author-email: chevisyoung@gmail.com
+License: MIT
+License-File: LICENSE.txt

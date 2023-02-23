@@ -1,0 +1,18 @@
+[project]
+name = "secure_web3_chevyoung"
+version = "1.1"
+authors = [
+  { name="Darkergo", email="chevisyoung@gmail.com" },
+]
+description = "Secure wallet and development enviroment"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/darkerego/secure_web3"
+"Bug Tracker" = "https://github.com/darkerego/secure_web3/issues"
