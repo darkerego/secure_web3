@@ -1,0 +1,12 @@
+LICENSE.txt
+README.md
+pyproject.toml
+setup.py
+secure_web3/__init__.py
+secure_web3/secure_web3.py
+secure_web3/sw3.py
+secure_web3_chevyoung.egg-info/PKG-INFO
+secure_web3_chevyoung.egg-info/SOURCES.txt
+secure_web3_chevyoung.egg-info/dependency_links.txt
+secure_web3_chevyoung.egg-info/requires.txt
+secure_web3_chevyoung.egg-info/top_level.txt

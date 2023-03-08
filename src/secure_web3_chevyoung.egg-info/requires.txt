@@ -1,0 +1,4 @@
+web3
+pycryptodome
+dotenv
+eth-utils

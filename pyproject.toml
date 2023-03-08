@@ -1,6 +1,6 @@
 [project]
 name = "secure_web3_chevyoung"
-version = "1.1"
+version = "1.15"
 authors = [
   { name="Darkergo", email="chevisyoung@gmail.com" },
 ]
@@ -13,6 +13,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[tool.setuptools.packages.find]
+# All the following settings are optional:
+where = ["src"]  # ["."] by default
+include = ["secure_web3*"]  # ["*"] by default
 [project.urls]
 "Homepage" = "https://github.com/darkerego/secure_web3"
 "Bug Tracker" = "https://github.com/darkerego/secure_web3/issues"
