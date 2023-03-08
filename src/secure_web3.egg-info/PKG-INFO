@@ -1,3 +1,20 @@
+Metadata-Version: 2.1
+Name: secure-web3
+Version: 1.2.3
+Summary: Secure wallet and development enviroment
+Home-page: https://github.com/darkerego/secure_web3
+Author: darkerego
+Author-email: Darkergo <chevisyoung@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/darkerego/secure_web3
+Project-URL: Bug Tracker, https://github.com/darkerego/secure_web3/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+
 # Secure Web3
 
 ### About
@@ -57,30 +74,7 @@ As a development framework
 <p>
 See main.py for example use.
 </p>
-
-### Installation 
-<p>
-To install with pip:
-</p>
-pip3 install secure-web3==1.2.3
-
-<p>
-You can also install from source by cloning this repo, installing the dependencies in requirements.txt, 
-and running `setup.py build`  and then `setup.py install`.
-</p>
-
-#### If pycryptodome crashes ...
-<p>
-Run $ pip3 install --upgrade  pycryptodome
-</p>
-
-#### If web3 crashes,
-<p>
-run $pip3 install web3 --upgrade
-</p>
 <pre>
-
-
 
 >> from lib import wallet_manager
 >> manager = wallet_manager.WalletManager(wallet_file)

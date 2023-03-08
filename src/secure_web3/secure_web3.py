@@ -7,9 +7,9 @@ import dotenv
 import web3
 from web3.middleware import geth_poa_middleware
 
-import lib.style
-from lib import abi_lib
-from lib.wallet_manager import WalletManager
+import secure_web3.lib.style
+from secure_web3.lib import abi_lib
+from secure_web3.lib.wallet_manager import WalletManager
 
 
 class SecureWeb3:
@@ -18,7 +18,7 @@ class SecureWeb3:
         self.endpoint = None
         self.token_abi = None
         self.account = None
-        self._print = lib.style.PrettyText(0)
+        self._print = secure_web3.lib.style.PrettyText(0)
         self.wallet_file = wallet_file
         self.network = network
         self.w3 = self.setup_w3()
@@ -36,18 +36,18 @@ class SecureWeb3:
             self._print.error(f'Web3 could connect to remote endpoint: {w3_endpoint}')
         if self.network == 'ethereum':
             self.endpoint = 'https://api.0x.org/'
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
         elif self.network == 'polygon':
             self.endpoint = 'https://polygon.api.0x.org/'
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
             self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         elif self.network == 'bsc':
-            self.token_abi = lib.abi_lib.BEP_ABI
+            self.token_abi = secure_web3.lib.abi_lib.BEP_ABI
             # self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
             self.endpoint = 'https://bsc.api.0x.org/'
             self._print.warning('Connected to BSC, which has not been tested very well yet.')
         elif self.network == 'aurora':
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
 
         self._print.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3

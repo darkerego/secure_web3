@@ -1,0 +1,6 @@
+web3
+pycryptodome
+python-dotenv
+eth-utils
+colored
+pycrypto

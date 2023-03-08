@@ -15,10 +15,10 @@ from web3.exceptions import TransactionNotFound
 from web3.middleware import geth_poa_middleware
 from web3.types import RPCResponse
 
-import lib.style
-from lib import abi_lib, inputs
-from lib.w3_validation import validate_addr, valid_token
-from lib.wallet_manager import WalletManager
+import secure_web3.lib.style
+from secure_web3.lib import abi_lib, inputs
+from secure_web3.lib.w3_validation import validate_addr, valid_token
+from secure_web3.lib.wallet_manager import WalletManager
 
 
 class SecureWeb3:
@@ -30,7 +30,7 @@ class SecureWeb3:
         self.wallet = None
         self.flashbots_endpoint = None
         self.tokens = []
-        self.printer = lib.style.PrettyText(0)
+        self.printer = secure_web3.lib.style.PrettyText(0)
         self.wallet_file = wallet_file
         self.network = network
         self.w3 = self.setup_w3()
@@ -49,17 +49,17 @@ class SecureWeb3:
         else:
             self.printer.error(f'Web3 could connect to remote endpoint: {w3_endpoint}')
         if self.network == 'ethereum':
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
         elif self.network == 'polygon':
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
             self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         elif self.network == 'bsc':
-            self.token_abi = lib.abi_lib.BEP_ABI
+            self.token_abi = secure_web3.lib.abi_lib.BEP_ABI
             # self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
             self.endpoint = 'https://bsc.api.0x.org/'
             self.printer.warning('Connected to BSC, which has not been tested very well yet.')
         elif self.network == 'aurora':
-            self.token_abi = lib.abi_lib.EIP20_ABI
+            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
 
         self.printer.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3
@@ -321,7 +321,7 @@ class EtherShellWallet:
             balance = self.eth_balance()
             self.sw3.printer.normal(f'Launching interactive wallet shell.\n')
             self.sw3.printer.good(f'Account Balance: {balance} ')
-            destination = lib.inputs.get_dest_addr()
+            destination = secure_web3.lib.inputs.get_dest_addr()
             if self.sw3.w3.eth.getCode(destination):
                 self.sw3.printer.warning('Warning! This is a contract address!')
             if _type == 'eth':
@@ -334,7 +334,7 @@ class EtherShellWallet:
                         else:
                             self.sw3.printer.error(f'Amount exceeds current wallet balance: {balance}')
                 self.sw3.printer.normal(f'Transaction parameters: \nSend {amount} to {destination}')
-                if lib.inputs.confirmation():
+                if secure_web3.lib.inputs.confirmation():
                     amount = amount * (10 ** 18)
                     txid = self.send_eth(int(amount), destination, legacy, private)
                     self.sw3.printer.good(f'TXID: {txid}')
@@ -372,7 +372,7 @@ class EtherShellWallet:
                     return False
                 self.sw3.printer.normal(f'Transaction parameters: \nSend {amount} of {symbol} @{token_short_addr} '
                                         f'to {destination}')
-                if lib.inputs.confirmation():
+                if secure_web3.lib.inputs.confirmation():
                     txid = self.send_erc20_token(qty, destination, token.get('address'), legacy, private)
                     if txid:
                         receipt = self.poll_receipt(txid)

@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name='secure_web3',
-    version='1.15',
+    version='1.2.3',
     packages=['secure_web3'],
-    install_requires=['web3', 'pycryptodome', 'dotenv', 'eth-utils'],
+    install_requires=['web3', 'pycryptodome', 'python-dotenv', 'eth-utils', 'colored', 'pycrypto'],
     package_dir={"": "src"},
     include_package_data=True,
     data_files=[('', ['src/secure_web3/keys/default_wallet.json', 'src/secure_web3/data/networks.json'])],

@@ -1,6 +1,6 @@
 from eth_utils import to_checksum_address
-from lib import w3_validation
-from lib import style
+from secure_web3.lib import w3_validation
+from secure_web3.lib import style
 s = style.PrettyText(1)
 
 
