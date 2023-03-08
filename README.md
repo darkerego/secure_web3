@@ -69,6 +69,21 @@ You can also install from source by cloning this repo, installing the dependenci
 and running `setup.py build`  and then `setup.py install`.
 </p>
 
+### Configuration
+
+<p>
+secure-web3 expects to find your rpc endpoints in the .env file. It will look for these names:
+
+{network}_http_endpoint
+{network}_ws_endpoint
+
+Example:
+
+ethereum_http_endpoint
+ethereum_ws_endpoint
+
+</p>
+
 #### If pycryptodome crashes ...
 <p>
 Run $ pip3 install --upgrade  pycryptodome
