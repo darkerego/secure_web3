@@ -34,21 +34,13 @@ class SecureWeb3:
             self._print.good(f"Connected to chain: {self.w3.eth.chain_id}")
         else:
             self._print.error(f'Web3 could connect to remote endpoint: {w3_endpoint}')
-        if self.network == 'ethereum':
-            self.endpoint = 'https://api.0x.org/'
-            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
-        elif self.network == 'polygon':
-            self.endpoint = 'https://polygon.api.0x.org/'
-            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
+        self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
+        if self.network == 'polygon':
             self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         elif self.network == 'bsc':
             self.token_abi = secure_web3.lib.abi_lib.BEP_ABI
             # self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-            self.endpoint = 'https://bsc.api.0x.org/'
             self._print.warning('Connected to BSC, which has not been tested very well yet.')
-        elif self.network == 'aurora':
-            self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
-
         self._print.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3
 

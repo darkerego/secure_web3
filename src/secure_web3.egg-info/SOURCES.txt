@@ -3,8 +3,8 @@ README.md
 pyproject.toml
 setup.py
 src/secure_web3/__init__.py
-src/secure_web3/secure_web3.py
 src/secure_web3/sw3.py
+src/secure_web3/sw3_wallet.py
 src/secure_web3.egg-info/PKG-INFO
 src/secure_web3.egg-info/SOURCES.txt
 src/secure_web3.egg-info/dependency_links.txt

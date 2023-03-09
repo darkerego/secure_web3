@@ -62,7 +62,7 @@ See main.py for example use.
 <p>
 To install with pip:
 </p>
-pip3 install secure-web3==1.2.3
+pip3 install secure-web3==1.2.4
 
 <p>
 You can also install from source by cloning this repo, installing the dependencies in requirements.txt, 
@@ -97,8 +97,8 @@ run $pip3 install web3 --upgrade
 
 
 
->> from lib import wallet_manager
->> manager = wallet_manager.WalletManager(wallet_file)
+>> from secure_web3 import sw3
+>> manager = sw3.wallet_manager.WalletManager(wallet_file)
 >> priv_key = manager.decrypt_load_wallet()
 
 </pre>

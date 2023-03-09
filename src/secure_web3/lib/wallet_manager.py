@@ -146,9 +146,10 @@ class WalletManager:
         password = ''
         confirm_password = ''
         # Example usage:
+        print('[+] Setting up new wallet ...')
         for x in range(3):
-            password: str = getpass('Enter password  >> ')
-            confirm_password = str(getpass('Confirm password >>: '))
+            password: str = getpass('Enter new password  >> ')
+            confirm_password = str(getpass('Confirm new password >>: '))
             if password == confirm_password:
                 break
             else:
