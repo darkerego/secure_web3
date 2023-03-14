@@ -1,6 +1,6 @@
 [project]
 name = "secure_web3"
-version = "1.2.4"
+version = "1.2.6"
 authors = [
   { name="Darkergo", email="chevisyoung@gmail.com" },
 ]

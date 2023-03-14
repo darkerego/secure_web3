@@ -146,10 +146,10 @@ class WalletManager:
         password = ''
         confirm_password = ''
         # Example usage:
-        print('[+] Setting up new wallet ...')
+        print('[+] Importing key and creating wallet ...')
         for x in range(3):
-            password: str = getpass('Enter new password  >> ')
-            confirm_password = str(getpass('Confirm new password >>: '))
+            password: str = getpass('Enter new wallet password >> ')
+            confirm_password = str(getpass('Confirm new wallet password >>: '))
             if password == confirm_password:
                 break
             else:
@@ -161,7 +161,7 @@ class WalletManager:
             s, p = self.hasher.hash_str(password=password)
             assert self.hasher.check_hash_str(s, p, password)
             assert not self.hasher.check_hash_str(s, p, str(uuid.uuid4().hex))
-            private_key = getpass('Enter privkey >> ')
+            private_key = getpass('Enter private key >> ')
             confirm_key = getpass('Confirm key >> ')
             if private_key == confirm_key:
                 self.aes = AESCipher(password)
@@ -184,12 +184,12 @@ class WalletManager:
 
                         del password, confirm_password, private_key, confirm_key, comment
                         self.wallet.save_wallet()
+                        return True
 
-                        break
                     else:
                         print('Keys did not match ...')
 
-    def _decrypt_load_wallet(self):
+    def _decrypt_load_wallet(self) -> (str, dict):
         """
         Possibly more secure method?
         :return:
@@ -202,9 +202,9 @@ class WalletManager:
             self.aes = AESCipher(pw)
             return self.aes.decrypt(enc=enc_key), ret_dict
         else:
-            return False
+            return False, {}
 
-    def decrypt_load_wallet(self):
+    def decrypt_load_wallet(self) -> (str, dict):
         """
         User friendly method
         :return:

@@ -8,15 +8,21 @@ import dotenv
 import web3
 from eth_typing import HexStr
 from web3.middleware import geth_poa_middleware
-
+import secure_web3.lib.abi_lib
 import secure_web3.lib.style
 from secure_web3.lib.wallet_manager import WalletManager
 
 
+class Web3RpcNotConfigured(Exception):
+    pass
+
+
 class SecureWeb3:
-    def __init__(self, wallet_file: str = None, network: str = 'ethereum'):
-        dotenv.load_dotenv()
+    def __init__(self, wallet_file: str = None, network: str = 'ethereum',
+                 use_flashbots: bool = False):
+        # dotenv.load_dotenv()
         self.endpoint = None
+        self.use_flashbots = use_flashbots
         self.token_abi = None
         self.account = None
         self.wallet = None
@@ -29,11 +35,17 @@ class SecureWeb3:
         self.eth_price = 0
 
     def setup_w3(self) -> web3.Web3:
-        self.flashbots_endpoint = os.environ.get(f'flashbots_{self.network}_endpoint')
+        flashbots_endpoint = os.environ.get(f'flashbots_{self.network}_endpoint')
         w3_endpoint = os.environ.get(f'{self.network}_http_endpoint')
-        if self.flashbots_endpoint:
+
+        # Raise if not setup
+        if flashbots_endpoint and self.use_flashbots:
             self.printer.normal('Flashbots RPC available, enabling.')
             w3_endpoint = self.flashbots_endpoint
+        else:
+            # w3_endpoint =
+            if not w3_endpoint:
+                raise Web3RpcNotConfigured("Please configure the RPC for this network in .env")
         self._w3 = web3.Web3(web3.HTTPProvider(w3_endpoint))
         if self.w3.isConnected:
             self.printer.good(f"Connected to chain: {self.w3.eth.chain_id}")
@@ -49,17 +61,21 @@ class SecureWeb3:
             self.token_abi = secure_web3.lib.abi_lib.BEP_ABI
             # self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
             self.printer.warning('Connected to BSC, which has not been tested very well yet.')
-        #elif self.network == 'aurora':
+        # elif self.network == 'aurora':
         #    self.token_abi = secure_web3.lib.abi_lib.EIP20_ABI
 
         self.printer.good(f'Web3 connected to chain: {self.w3.eth.chain_id}')
         return self.w3
 
-    def load_wallet(self) -> bool:
-        if not self.wallet_file:
+    def load_wallet(self, wallet_file=None) -> bool:
+        if not wallet_file:
             self.wallet_file = os.environ.get('default_wallet_location')
-        self.wallet = WalletManager(self.wallet_file)
-        # w.setup_wizard()
+        else:
+            self.wallet_file = wallet_file
+            if os.path.exists(self.wallet_file):
+                self.wallet = WalletManager(self.wallet_file)
+            else:
+                raise WalletFileNotFound('Please run --init to import your key.')
         denc, conf = self.wallet.decrypt_load_wallet()
         # print(conf)
         self.account = web3.Account.from_key(denc)
@@ -70,21 +86,31 @@ class SecureWeb3:
             self.tokens = tokens
         if self.account:
             # overwrite in memory
-            # w = uuid.uuid4().hex
+            w = uuid.uuid4().hex
             denc = uuid.uuid4().hex
-            # del w
-            del denc
+            del denc, w
             return True
         return False
 
-    def configure_wallet(self) -> None:
+    def configure_wallet(self, custom_parameters: list = []) -> bool:
+        """
+
+        :return:
+        """
+        ret = False
         w = WalletManager(self.wallet_file)
-        w.setup_wizard()
+        if w.setup_wizard(custom_parameters):
+            ret = True
         w = uuid.uuid4().hex
         del w
+        return ret
 
     @property
     def w3(self) -> web3.Web3:
+        """
+        Access web3
+        :return:
+        """
         return self._w3
 
     def switch_network(self, network_name: str, poa: bool = False) -> None:

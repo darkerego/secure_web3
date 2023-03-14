@@ -26,27 +26,35 @@ class EtherShellWallet:
         self._session = requests.Session()
         self.w3 = sw3.w3
         self._balance = 0
+        self.eth_price = 0
 
-    def query_eth_price(self) -> None:
-        if self.w3.eth.chain_id == 0 or self.w3.eth.chain_id == 5:
-            s, r = self._session.get(
-                url=f'https://api.etherscan.io/api?module=stats&action=ethprice&apikey='
-                    f'{os.environ.get("etherscan_api_key")}')
-            eth_price = json.loads(json.dumps(r))
-            self.eth_price = eth_price.get('result').get('ethusd')
-        elif self.w3.eth.chain_id == 56:
+    def query_eth_price(self, chain_id = None) -> (float, float):
+        if chain_id is None:
+            chain_id = self.w3.eth.chain_id
+        if chain_id not in [0, 1, 5, 56, 137, 42161]:
+            print('[!] Warning: Unknown network, assuming ETH.')
+
+        if chain_id == 56:
             s, r = self._session.get(
                 f'https://api.bscscan.com/api?module=stats&action=bnbprice&apikey='
                 f'{os.environ.get("bscan_api_key")}')
             eth_price = json.loads(json.dumps(r))
             self.eth_price = eth_price.get('result').get('ethusd')
-        elif self.w3.eth.chain_id == 137:
+        elif chain_id == 137:
             r = requests.get(
                 'https://api.polygonscan.com/' + 'api' +
                 f'?module=stats&action=maticprice&apikey={os.environ.get("polygonscan_api_key")}')
             r = r.json()
             eth_price = json.loads(json.dumps(r))
             self.eth_price = eth_price.get('result').get('maticusd')
+
+        else:
+            s, r = self._session.get(
+                url=f'https://api.etherscan.io/api?module=stats&action=ethprice&apikey='
+                    f'{os.environ.get("etherscan_api_key")}')
+            eth_price = json.loads(json.dumps(r))
+            self.eth_price = eth_price.get('result').get('ethusd')
+        return self.eth_price
 
     def query_gas_api(self) -> (int, int):
         """curl -H 'Authorization: f5534c3e-c1e0-477d-9978-412b9a1276a6'
@@ -58,6 +66,7 @@ class EtherShellWallet:
         ret = self._session.get('https://api.blocknative.com/gasprices/blockprices',
                                 params={'chainid': chainId},
                                 headers={'Authorization': os.environ.get('blocknative_api_key')})
+
         if ret.status_code == 200:
             ret = ret.json()
         max_priority_fee_per_gas = ret.get('blockPrices')[0].get('estimatedPrices')[0].get(
@@ -81,7 +90,7 @@ class EtherShellWallet:
         :param private: send via private transaction method
         :return: transaction hash
         """
-        tx['nonce'] = self.sw3.w3.eth.get_transaction_count(sw3.account.address)
+        tx['nonce'] = self.sw3.w3.eth.get_transaction_count(self.sw3.account.address)
         self.sw3.printer.normal(f'Loaded TX:\n{tx}')
         sign = input('Broadcast? y/n >> ')
         if sign.lower() in ['yes', 'y']:
