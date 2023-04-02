@@ -62,7 +62,7 @@ See main.py for example use.
 <p>
 To install with pip:
 </p>
-pip3 install secure-web3==1.2.6
+pip3 install secure-web3==1.2.7
 
 <p>
 You can also install from source by cloning this repo, installing the dependencies in requirements.txt, 

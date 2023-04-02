@@ -11,6 +11,7 @@ from web3.middleware import geth_poa_middleware
 import secure_web3.lib.abi_lib
 import secure_web3.lib.style
 from secure_web3.lib.wallet_manager import WalletManager
+from lib import load_networks
 
 
 class Web3RpcNotConfigured(Exception):
@@ -113,6 +114,11 @@ class SecureWeb3:
         """
         return self._w3
 
+
+
+
+
+
     def switch_network(self, network_name: str, poa: bool = False) -> None:
         """
         Switch network of w3 connections
@@ -135,6 +141,7 @@ class SecureWeb3:
 
 
 if __name__ == '__main__':
+    networks = load_networks.load_networks()
     args = argparse.ArgumentParser('Secure Web3 Cli')
     args.add_argument('-i', '--init', dest='init_wallet', type=str, nargs=1,
                       default=None, help='Initialize this new wallet')
@@ -145,7 +152,7 @@ if __name__ == '__main__':
     args.add_argument('-l', '--lock', dest='lock_wallet', action='store_true',
                       help='Lock all open wallets.')
     args.add_argument('-n', '--network', type=str, default='ethereum',
-                      choices=['ethereum', 'polygon', 'bsc', 'aurora'])
+                      choices=networks)
     args = args.parse_args()
     dotenv.load_dotenv()
 

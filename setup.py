@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='secure_web3',
-    version='1.2.6',
+    version='1.2.7',
     packages=['secure_web3'],
     install_requires=['web3', 'pycryptodome', 'python-dotenv', 'eth-utils', 'colored', 'pycrypto'],
     package_dir={"": "src"},
