@@ -83,6 +83,11 @@ ethereum_http_endpoint
 ethereum_ws_endpoint
 
 </p>
+<p>
+If you need RPC endpoints, I highly recommend Quicknode. Here is a referal:
+
+https://www.quicknode.com?tap_a=67226-09396e&tap_s=3874015-93e753&utm_source=affiliate&utm_campaign=generic&utm_content=affiliate_landing_page&utm_medium=generic
+</p>
 
 #### If pycryptodome crashes ...
 <p>
