@@ -89,7 +89,7 @@ If you need RPC endpoints, I used to recommend Quicknode. Here is a referal:
 https://www.quicknode.com?tap_a=67226-09396e&tap_s=3874015-93e753&utm_source=affiliate&utm_campaign=generic&utm_content=affiliate_landing_page&utm_medium=generic
 
 But now I recommend particle:
-https://particle.networks. I will adapt this library eventually to include the ability to automatically use particle's api for any supported chain. It supports almost all of them.
+https://particle.network. I will adapt this library eventually to include the ability to automatically use particle's api for any supported chain. It supports almost all of them.
 </p>
 
 #### If pycryptodome crashes ...
